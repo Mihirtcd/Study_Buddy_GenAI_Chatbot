@@ -1,0 +1,48 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Assuming the data is loaded correctly from the Excel file
+feedback_df = pd.read_excel('/Users/mihirshekhar/Downloads/feedback_table.xlsx')
+
+# Convert 'response_time' to numeric, coercing errors to NaN (which will be handled later)
+feedback_df['response_time'] = pd.to_numeric(feedback_df['response_time'], errors='coerce')
+
+# Handle NaN values in 'response_time' (you might choose to fill with the mean, median, or drop them)
+# For example, to fill with the mean:
+mean_response_time = feedback_df['response_time'].mean()
+feedback_df['response_time'].fillna(mean_response_time, inplace=True)
+
+# Now, categorize the response times into bins
+bins = [0, 4, 8, float('inf')]
+labels = ['<4s', '4-8s', '>8s']
+feedback_df['response_time_category'] = pd.cut(feedback_df['response_time'], bins=bins, labels=labels)
+
+# Calculate counts of each feedback type
+feedback_counts = feedback_df.groupby(['response_time_category', 'feedback']).size().unstack(fill_value=0)
+
+# Calculate the total counts per response time category
+total_counts = feedback_counts.sum(axis=1)
+
+# Calculate the proportion of 'Yes' feedback
+yes_proportions = feedback_counts['Yes'] / total_counts
+
+# Create figure and axis objects with subplots()
+fig, ax1 = plt.subplots(figsize=(10, 6))
+
+# Bar chart for counts
+feedback_counts.plot(kind='bar', stacked=True, ax=ax1, width=0.4, position=1)
+
+# Line chart for 'Yes' proportion
+ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+yes_proportions.plot(kind='line', marker='o', ax=ax2, color='k', linewidth=2)
+
+# Setting labels and titles
+ax1.set_xlabel('Response Time Categories')
+ax1.set_ylabel('Counts')
+ax2.set_ylabel('Proportion of Yes Feedback')
+ax1.set_title('Feedback Counts and Yes Proportion by Response Time Categories')
+
+# Show plot
+fig.tight_layout()  # adjust plot to ensure everything fits without overlap
+plt.show()
